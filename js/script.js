@@ -655,6 +655,7 @@ function pagination (posts, postsPerPage, paginationContainer) {
   
 }
 
+// call the pagination function
 pagination(posts, PAGE_LIMIT, paginationContainer);
 
 
