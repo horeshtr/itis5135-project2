@@ -521,122 +521,387 @@ const posts = [
 posts.sort((a, b)=>Date.parse(a.date) - Date.parse(b.date));
 
 
+
+// calculate total posts and required pages
+let totalPosts = posts.length;
+let totalPages = Math.ceil(totalPosts / PAGE_LIMIT);
+let currentPage = 1;
+
 // get the article wrapper element
 const articleWrapper = document.querySelector(".articles-wrapper");
 
-// get the pagination container element
-const paginationContainer = document.querySelector(".pagination-container");
+document.addEventListener("DOMContentLoaded", function() {
+  function displayPosts(pageNumber) {
+    
+    // clear any existing content
+    articleWrapper.innerHTML = "";
 
-//create the overall function
-function pagination (posts, postsPerPage, paginationContainer) {
-  
-  // calculate total posts and required pages
-  let totalPosts = posts.length;
-  let totalPages = Math.ceil(totalPosts / postsPerPage);
-  let currentPage = 1;
-
-  // slice posts array by pages
-  function slicePosts(pageNumber) {
+    // slice posts array by pages
     let startIndex;
     let endIndex;
     if (pageNumber === 1) {
-      startIndex = (pageNumber - 1) * postsPerPage;
-      endIndex = startIndex + postsPerPage;
+      startIndex = (pageNumber - 1) * PAGE_LIMIT;
+      endIndex = startIndex + PAGE_LIMIT;
     } else {
-      startIndex = ((pageNumber - 1) * postsPerPage) + 1;
-      endIndex = startIndex + (postsPerPage - 1);
+      startIndex = ((pageNumber - 1) * PAGE_LIMIT) + 1;
+      endIndex = startIndex + (PAGE_LIMIT - 1);
     };
 
-    const postSlice = posts.slice(startIndex, endIndex);
-
-    //clear the article wrapper element to start
-    articleWrapper = "";
-
-    // generate elements and content for each item within the slice
-    postSlice.forEach((item) => {
-      
+    for (let i = startIndex; i < endIndex && i < totalPosts; i++) {
       // create a new article element
       const articleCard = document.createElement("article");
       articleCard.classList.add("card");
-
+    
       // create the article card header
       const cardHeaderDiv = document.createElement("div");
       cardHeaderDiv.classList.add("card-header");
-
+    
       const authorImage = document.createElement("img");
       const cardTitleDateDiv = document.createElement("div");
-
+    
       // create the article card body
       const cardBodyDiv = document.createElement("div");
       cardBodyDiv.classList.add("card-body");
-
+    
       const articleTitle = document.createElement("h3");
       const articleBody = document.createElement("p");
-
+    
       articleWrapper.appendChild(articleCard);
       articleCard.appendChild(cardHeaderDiv);
       cardHeaderDiv.appendChild(authorImage);
       cardHeaderDiv.appendChild(cardTitleDateDiv);
-
+    
       articleCard.appendChild(cardBodyDiv);
       cardBodyDiv.appendChild(articleTitle);
       cardBodyDiv.appendChild(articleBody);
-
+    
       // set attributes using data from each object in posts
       articleCard.setAttribute("data-id", posts[i].id);
-
+    
       authorImage.setAttribute("src", posts[i].profile);
       authorImage.setAttribute("alt", "profile picture");
       authorImage.setAttribute("class", "avatar");
-
+    
       cardTitleDateDiv.innerText = posts[i].author + " - " + posts[i].date;
-
+    
       articleTitle.innerText = posts[i].title;
-
+    
       let postContent = posts[i].content;
       let displayContent = "";
       let remainingContent = "";
       if (postContent.length > MAX_LENGTH) {
         displayContent = postContent.substring(0, MAX_LENGTH);
         remainingContent = postContent.substring(MAX_LENGTH);
-
+    
         articleBody.innerText = displayContent + " ...";
       } else {
         articleBody.innerText = posts[i].content;
       }
-      })
-
+    }
   }
 
-  function setupPagination () {
+  // get the pagination container element
+  const paginationContainer = document.querySelector(".pagination-container");
 
-    // Empty the pagination container to start
-    paginationContainer = "";
-
+  function paginationButtons() {
     // for loop to create page buttons based on calculations above
     for (let page = 1; page <= totalPages; page++) {
-      
+
       const pageButton = document.createElement("button");
       pageButton.classList.add("page-btn");
       pageButton.textContent = page;
       pageButton.setAttribute("data-page", page);
 
-      paginationContainer.appendChild(pageButton);
-
       // add a click event listener to the page buttons
       pageButton.addEventListener("click", () => {
         let pageNumber = parseInt(pageButton.getAttribute("data-page"));
         currentPage = pageNumber;
-        
-        setActivePageBtn(currentPage);
-        slicePosts(currentPage);
+
+        // call displayPosts to display posts for the current page
+        displayPosts(currentPage);
+
+        // call setActivePageBtn to set the active page button to the current page
+        setActivePageBtn(currentPage);  
       });
+
+      paginationContainer.appendChild(pageButton);
+    }
+
+    // Set current page button to page 1 and display posts
+    setActivePageBtn(currentPage);
+    displayPosts(currentPage);
+  }
+
+  // set the active page button
+  function setActivePageBtn(pageNumber) {
+    const pageButtons = document.querySelectorAll(".page-btn");
+
+    //remove active class for all buttons
+    pageButtons.forEach((button) => {
+      button.classList.remove("active");
+    })
+
+    //set active class for the clicked button
+    let clickedPageBtn = document.querySelector(`.page-btn[data-page="${pageNumber}"]`);
+    clickedPageBtn.classList.add("active");
+  }
+
+  // call the function to render pagination buttons when the page loads
+  paginationButtons();
+
+
+  // Form manipulation
+  // Add an event listener to show/hide the submission form
+  const writeButton = document.querySelector(".accent-btn");
+  const formContainer = document.querySelector(".form-container");
+
+  writeButton.addEventListener("click", e => {
+    formContainer.classList.toggle("visible");
+  });
+
+
+  // Add functionality to the submit button
+  const form = document.querySelector("form");
+  const btn = document.querySelector("button");
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+
+    const isValid = form.reportValidity();
+
+    if (isValid) {
+      
+      const inputs = document.querySelectorAll("input");
+      const textArea = document.querySelector("textarea");
+
+      const title = inputs[0].value;
+      const author = inputs[1].value;
+      const content = textArea.value;
+      
+      const id = posts.length;
+      const date = new Date();
+      const profile = "images/default.jpeg";
+
+      const newPost = {id, title, author, date, profile, content};
+
+      posts.unshift(newPost);
+      displayPosts(currentPage);
+      form.reset();
+      formContainer.classList.toggle("visible");
+    } 
+  });
+
+
+  // Add functionality for the modal popup
+  // get the modal articles wrapper element and modal div
+  const modalArticleWrapper = document.querySelector(".article-wrapper");
+  const modalDiv = document.querySelector(".modal");
+
+  // Add an event listener to the article wrapper
+  articleWrapper.addEventListener("click", (e) => {
+    
+    //get the target element, its parent, and whether it has the card class
+    const clickTarget = e.target;
+    const clickTargetParent = clickTarget.closest(".card");
+    const hasClass = clickTargetParent.classList.contains("card");
+
+    if (hasClass) {
+
+      modalDiv.classList.remove("hidden");
+
+      // get the data-id attribute of the target and find the index of the corresponding post
+      const ancestorAttribute = clickTargetParent.getAttribute("data-id");
+      const findPostId = parseInt(ancestorAttribute);
+      const postObject = posts.find(post => post.id === findPostId);
+
+      // clear any existing content
+      modalArticleWrapper.innerHTML = "";
+
+      // create a new article element
+      const modalArticleCard = document.createElement("article");
+      modalArticleCard.classList.add("card");
+    
+      // create the article card header
+      const modalCardHeaderDiv = document.createElement("div");
+      modalCardHeaderDiv.classList.add("card-header");
+    
+      const modalAuthorImage = document.createElement("img");
+      const modalCardTitleDateDiv = document.createElement("div");
+    
+      // create the article card body
+      const modalCardBodyDiv = document.createElement("div");
+      modalCardBodyDiv.classList.add("card-body");
+    
+      const modalArticleTitle = document.createElement("h3");
+      const modalArticleBody = document.createElement("p");
+    
+      modalArticleWrapper.appendChild(modalArticleCard);
+      modalArticleCard.appendChild(modalCardHeaderDiv);
+      modalCardHeaderDiv.appendChild(modalAuthorImage);
+      modalCardHeaderDiv.appendChild(modalCardTitleDateDiv);
+    
+      modalArticleCard.appendChild(modalCardBodyDiv);
+      modalCardBodyDiv.appendChild(modalArticleTitle);
+      modalCardBodyDiv.appendChild(modalArticleBody);
+    
+      // set attributes using data from each object in posts
+      modalArticleCard.setAttribute("data-id", posts[findPostId].id);
+    
+      modalAuthorImage.setAttribute("src", posts[findPostId].profile);
+      modalAuthorImage.setAttribute("alt", "profile picture");
+      modalAuthorImage.setAttribute("class", "avatar");
+    
+      modalCardTitleDateDiv.innerText = posts[findPostId].author + " - " + posts[findPostId].date;
+    
+      modalArticleTitle.innerText = posts[findPostId].title;
+
+      modalArticleBody.innerText = posts[findPostId].content;
+
+    }
+  })
+
+  // get the modal close button element
+  const modalCloseBtn = document.querySelector(".close-btn");
+
+  //add a click event listener to the close button that closes the modal popup
+  modalCloseBtn.addEventListener("click", () => {
+    modalDiv.classList.add("hidden");
+  })
+
+
+///////////////////////////////////////////
+// EXTRA CREDIT
+///////////////////////////////////////////
+
+  //search functionality
+  //get the search bar element
+  const searchBarElement = document.querySelector(".search-bar");
+
+  //add event listener to the search bar element
+  searchBarElement.addEventListener("change", () => {
+    // get the text value from the search bar input
+    const searchInput = document.querySelector('input[type="search"]');
+    const searchInputValue = searchInput.value;
+    
+    //filter the posts array based on the searchInputValue
+    const postsResult = posts.filter((obj) => obj.title.includes(searchInputValue) || obj.content.includes(searchInputValue));
+    
+    //update the descendants of the element of the 'articles-wrapper' and update the buttons in the 'pagination-container'.
+    let filterPosts = postsResult.length;
+    let totalPages = Math.ceil(filterPosts / PAGE_LIMIT);
+    let currentPage = 1;
+
+    // get the article wrapper element
+    const articleWrapper = document.querySelector(".articles-wrapper");
+
+    function displayPosts(pageNumber) {
+      
+      // clear any existing content
+      articleWrapper.innerHTML = "";
+
+      // slice posts array by pages
+      let startIndex;
+      let endIndex;
+      if (pageNumber === 1) {
+        startIndex = (pageNumber - 1) * PAGE_LIMIT;
+        endIndex = startIndex + PAGE_LIMIT;
+      } else {
+        startIndex = ((pageNumber - 1) * PAGE_LIMIT) + 1;
+        endIndex = startIndex + (PAGE_LIMIT - 1);
+      };
+
+      for (let i = startIndex; i < endIndex && i < filterPosts; i++) {
+        // create a new article element
+        const articleCard = document.createElement("article");
+        articleCard.classList.add("card");
+      
+        // create the article card header
+        const cardHeaderDiv = document.createElement("div");
+        cardHeaderDiv.classList.add("card-header");
+      
+        const authorImage = document.createElement("img");
+        const cardTitleDateDiv = document.createElement("div");
+      
+        // create the article card body
+        const cardBodyDiv = document.createElement("div");
+        cardBodyDiv.classList.add("card-body");
+      
+        const articleTitle = document.createElement("h3");
+        const articleBody = document.createElement("p");
+      
+        articleWrapper.appendChild(articleCard);
+        articleCard.appendChild(cardHeaderDiv);
+        cardHeaderDiv.appendChild(authorImage);
+        cardHeaderDiv.appendChild(cardTitleDateDiv);
+      
+        articleCard.appendChild(cardBodyDiv);
+        cardBodyDiv.appendChild(articleTitle);
+        cardBodyDiv.appendChild(articleBody);
+      
+        // set attributes using data from each object in posts
+        articleCard.setAttribute("data-id", postsResult[i].id);
+      
+        authorImage.setAttribute("src", postsResult[i].profile);
+        authorImage.setAttribute("alt", "profile picture");
+        authorImage.setAttribute("class", "avatar");
+      
+        cardTitleDateDiv.innerText = postsResult[i].author + " - " + postsResult[i].date;
+      
+        articleTitle.innerText = postsResult[i].title;
+      
+        let postContent = postsResult[i].content;
+        let displayContent = "";
+        let remainingContent = "";
+        if (postContent.length > MAX_LENGTH) {
+          displayContent = postContent.substring(0, MAX_LENGTH);
+          remainingContent = postContent.substring(MAX_LENGTH);
+      
+          articleBody.innerText = displayContent + " ...";
+        } else {
+          articleBody.innerText = postsResult[i].content;
+        }
+      }
+    }
+
+    // get the pagination container element
+    const paginationContainer = document.querySelector(".pagination-container");
+
+    // remove any existing content from the pagination container
+    paginationContainer.innerHTML = "";
+    
+    function paginationButtons() {
+      // for loop to create page buttons based on calculations above
+      for (let page = 1; page <= totalPages; page++) {
+
+        const pageButton = document.createElement("button");
+        pageButton.classList.add("page-btn");
+        pageButton.textContent = page;
+        pageButton.setAttribute("data-page", page);
+
+        // add a click event listener to the page buttons
+        pageButton.addEventListener("click", () => {
+          let pageNumber = parseInt(pageButton.getAttribute("data-page"));
+          currentPage = pageNumber;
+
+          // call displayPosts to display posts for the current page
+          displayPosts(currentPage);
+
+          // call setActivePageBtn to set the active page button to the current page
+          setActivePageBtn(currentPage);  
+        });
+
+        paginationContainer.appendChild(pageButton);
+      }
+
+      // Set current page button to page 1 and display posts
+      setActivePageBtn(currentPage);
+      displayPosts(currentPage);
     }
 
     // set the active page button
     function setActivePageBtn(pageNumber) {
       const pageButtons = document.querySelectorAll(".page-btn");
-      
+
       //remove active class for all buttons
       pageButtons.forEach((button) => {
         button.classList.remove("active");
@@ -646,24 +911,13 @@ function pagination (posts, postsPerPage, paginationContainer) {
       let clickedPageBtn = document.querySelector(`.page-btn[data-page="${pageNumber}"]`);
       clickedPageBtn.classList.add("active");
     }
+
+    // call the function to render pagination buttons when the page loads
+    paginationButtons();
   
-    // Set current page button and slice to page 1
-    setActivePageBtn(currentPage);
-    slicePosts(currentPage);
-  }
+  })
 
-  
-}
-
-// call the pagination function
-pagination(posts, PAGE_LIMIT, paginationContainer);
-
-
-// Form manipulation
-const writeButton = document.querySelector(".accent-btn");
-const formContainer = document.querySelector(".form-container");
-formContainer.classList.add("hidden");
-
-writeButton.addEventListener("click", e => {
-  formContainer.classList.toggle("hidden");
 });
+
+
+

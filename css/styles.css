@@ -122,13 +122,13 @@ header input {
   align-self: center;
   border-radius: 0.5rem;
   width: 100%;
+  display: none;
 }
 
 form {
   padding: 1rem;
   width: 100%;
 }
-
 
 label {
   color: var(--clr-primary);
@@ -154,8 +154,8 @@ form .accent-btn {
 
 }
 
-.hidden {
-  display: none;
+.visible {
+  display: block;
 }
 
 /* articles */
